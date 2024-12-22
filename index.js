@@ -90,18 +90,31 @@ async function run() {
             const result = await allBooksDb.findOne(query)
             res.send(result)
         })
-        // getting data by category
-        // app.get('/allBooks/category', async (req, res) => {
-        //     const category = req.query.category
-        //     const query = {category}
-        //     const result = await allBooksDb.find(query).toArray()
-        //     res.send(result)
-        // })
+        // getting all unique categories -------------------Working-------------------------
+        app.get('/allBooks/categories', async (req, res) => {
+            // Fetch distinct categories directly from MongoDB
+            const categories = await allBooksDb.distinct('category');
+            res.send(categories); // Send the unique categories directly
+        });
+
         // getting a specific data(based on category) from database (api)
         app.get('/allBooks/category/:type', async (req, res) => {
             const type = req.params.type
             const query = { category: type };
             const result = await allBooksDb.find(query).toArray();
+            res.send(result)
+        })
+        // updating a specific book
+        app.put('/allBooks/:id', async (req, res) => {
+            const id = req.params.id
+            const updateBook = req.body
+            // Remove the _id field before updating
+            delete updateBook._id;
+            console.log('sss', updateBook)
+            const result = await allBooksDb.updateOne(
+                { _id: new ObjectId(id) },
+                { $set: updateBook }
+            )
             res.send(result)
         })
 
