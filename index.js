@@ -90,13 +90,6 @@ async function run() {
             const result = await allBooksDb.findOne(query)
             res.send(result)
         })
-        // getting all unique categories -------------------Working-------------------------
-        app.get('/allBooks/categories', async (req, res) => {
-            // Fetch distinct categories directly from MongoDB
-            const categories = await allBooksDb.distinct('category');
-            res.send(categories); // Send the unique categories directly
-        });
-
         // getting a specific data(based on category) from database (api)
         app.get('/allBooks/category/:type', async (req, res) => {
             const type = req.params.type
@@ -115,6 +108,13 @@ async function run() {
                 { _id: new ObjectId(id) },
                 { $set: updateBook }
             )
+            res.send(result)
+        })
+        // storing a book 
+        app.post('/allBooks', async (req, res) => {
+            const newBook = req.body
+            newBook.createdAt = new Date()
+            const result = await allBooksDb.insertOne(newBook)
             res.send(result)
         })
 
