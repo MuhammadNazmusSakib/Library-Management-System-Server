@@ -54,7 +54,7 @@ async function run() {
         const allBooksDb = client.db("LibraryManagementSystem").collection('Books')
         const allBorrowedBooksDb = client.db("LibraryManagementSystem").collection('BorrowedBooks')
 
-        // jwt
+        // json web token
         app.post('/jwt', (req, res) => {
             const user = req.body
             const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
@@ -78,13 +78,13 @@ async function run() {
 
         // allBooksDb------------------
         // getting all data from database (api)
-        app.get('/allBooks', async (req, res) => {
+        app.get('/allBooks', verifyToken, async (req, res) => {
             const cursor = allBooksDb.find()
             const result = await cursor.toArray()
             res.send(result)
         })
         // getting a specific data by id from database (api)
-        app.get('/allBooks/:id', async (req, res) => {
+        app.get('/allBooks/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const query = { _id: new ObjectId(id) }
             // const query = { _id: id }
@@ -98,8 +98,18 @@ async function run() {
             const result = await allBooksDb.find(query).toArray();
             res.send(result)
         })
+        // Fetch all unique categories
+        app.get('/categories', async (req, res) => {
+            const categories = await allBooksDb.aggregate([
+                { $group: { _id: "$category" } },
+                { $project: { _id: 0, category: "$_id" } },
+            ]).toArray();
+            res.send(categories.map(c => c.category));
+        });
+
+
         // updating a specific book
-        app.put('/allBooks/:id', async (req, res) => {
+        app.put('/allBooks/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const updateBook = req.body
             // Remove the _id field before updating
@@ -111,7 +121,7 @@ async function run() {
             res.send(result)
         })
         // storing a book 
-        app.post('/allBooks', async (req, res) => {
+        app.post('/allBooks', verifyToken, async (req, res) => {
             const newBook = req.body
             newBook.quantity = Number(newBook.quantity); // Ensure numeric type
             newBook.createdAt = new Date()
@@ -119,7 +129,7 @@ async function run() {
             res.send(result)
         })
         // update book quantity in database after borrowing
-        app.put('/allBooks/borrowed/:id', async (req, res) => {
+        app.put('/allBooks/borrowed/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const result = await allBooksDb.updateOne(
                 { _id: new ObjectId(id) }, // Filter to match the book by ID
@@ -128,7 +138,7 @@ async function run() {
             res.send(result)
         })
         // update book quantity in database after returning
-        app.put('/allBooks/returned/:id', async (req, res) => {
+        app.put('/allBooks/returned/:id', verifyToken, async (req, res) => {
             const id = req.params.id;
             const result = await allBooksDb.updateOne(
                 { _id: new ObjectId(id) }, // Filter to match the book by ID
@@ -139,30 +149,28 @@ async function run() {
 
         // allBorrowedBooksDb----------------------------------
         // storing a borrowed book 
-        // Working-----------------------
-        app.post('/allBorrowed', async (req, res) => {
+        app.post('/allBorrowed', verifyToken, async (req, res) => {
             const borrowedBook = req.body
             borrowedBook.createdAt = new Date()
             const result = await allBorrowedBooksDb.insertOne(borrowedBook)
             res.send(result)
         })
         // getting borrowed books based on different email id
-        app.get('/allBorrowed/email/:email', async (req, res) => {
+        app.get('/allBorrowed/email/:email', verifyToken, async (req, res) => {
             const email = req.params.email
             const query = { email: email }; // Use email directly in the query
 
             // checking token email and query email
-            // if (req.user.email !== req.params.email) {
-            //     return res.status(401).send({ message: 'Unauthorized access.' })
-            // }
+            if (req.user.email !== req.params.email) {
+                return res.status(401).send({ message: 'Unauthorized access.' })
+            }
 
             const result = await allBorrowedBooksDb.find(query).toArray(); // Retrieve all applications for the email
             res.send(result)
         })
         // delete borrowed book after return
-        app.delete('/allBorrowed/:id', async (req, res) => {
-            const {id} = req.params;
-            console.log(id)
+        app.delete('/allBorrowed/:id', verifyToken, async (req, res) => {
+            const { id } = req.params;
             const query = { _id: new ObjectId(id) }
             const result = await allBorrowedBooksDb.deleteOne(query);
             res.send({ message: 'Borrowed book removed successfully.', result });
