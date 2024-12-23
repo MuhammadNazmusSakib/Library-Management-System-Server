@@ -52,6 +52,7 @@ async function run() {
         // await client.connect();
 
         const allBooksDb = client.db("LibraryManagementSystem").collection('Books')
+        const allBorrowedBooksDb = client.db("LibraryManagementSystem").collection('BorrowedBooks')
 
         // jwt
         app.post('/jwt', (req, res) => {
@@ -103,7 +104,6 @@ async function run() {
             const updateBook = req.body
             // Remove the _id field before updating
             delete updateBook._id;
-            console.log('sss', updateBook)
             const result = await allBooksDb.updateOne(
                 { _id: new ObjectId(id) },
                 { $set: updateBook }
@@ -113,8 +113,30 @@ async function run() {
         // storing a book 
         app.post('/allBooks', async (req, res) => {
             const newBook = req.body
+            newBook.quantity = Number(newBook.quantity); // Ensure numeric type
             newBook.createdAt = new Date()
             const result = await allBooksDb.insertOne(newBook)
+            res.send(result)
+        })
+        // update book quantity in database after borrowing
+        app.put('/allBooks/borrowed/:id', async (req, res) => {
+            const id = req.params.id;
+            const result = await allBooksDb.updateOne(
+                { _id: new ObjectId(id) }, // Filter to match the book by ID
+                { $inc: { quantity: -1 } } // Correct usage of $inc
+            );
+            res.send(result)
+        })
+
+        // allBorrowedBooksDb----------------------------------
+        // storing a borrowed book 
+        // Working-----------------------
+        app.post('/allBorrowed', async (req, res) => {
+            const borrowedBook = req.body
+            console.log(borrowedBook)
+            borrowedBook.quantity = Number(borrowedBook.quantity); // Ensure numeric type
+            borrowedBook.createdAt = new Date()
+            const result = await allBorrowedBooksDb.insertOne(borrowedBook)
             res.send(result)
         })
 
