@@ -133,10 +133,21 @@ async function run() {
         // Working-----------------------
         app.post('/allBorrowed', async (req, res) => {
             const borrowedBook = req.body
-            console.log(borrowedBook)
-            borrowedBook.quantity = Number(borrowedBook.quantity); // Ensure numeric type
             borrowedBook.createdAt = new Date()
             const result = await allBorrowedBooksDb.insertOne(borrowedBook)
+            res.send(result)
+        })
+        // getting borrowed books based on different email id
+        app.get('/allBorrowed/email/:email', async (req, res) => {
+            const email = req.params.email
+            const query = { email: email }; // Use email directly in the query
+
+            // checking token email and query email
+            // if (req.user.email !== req.params.email) {
+            //     return res.status(401).send({ message: 'Unauthorized access.' })
+            // }
+
+            const result = await allBorrowedBooksDb.find(query).toArray(); // Retrieve all applications for the email
             res.send(result)
         })
 
