@@ -127,6 +127,15 @@ async function run() {
             );
             res.send(result)
         })
+        // update book quantity in database after returning
+        app.put('/allBooks/returned/:id', async (req, res) => {
+            const id = req.params.id;
+            const result = await allBooksDb.updateOne(
+                { _id: new ObjectId(id) }, // Filter to match the book by ID
+                { $inc: { quantity: 1 } } // Correct usage of $inc
+            );
+            res.send(result)
+        })
 
         // allBorrowedBooksDb----------------------------------
         // storing a borrowed book 
@@ -150,6 +159,15 @@ async function run() {
             const result = await allBorrowedBooksDb.find(query).toArray(); // Retrieve all applications for the email
             res.send(result)
         })
+        // delete borrowed book after return
+        app.delete('/allBorrowed/:id', async (req, res) => {
+            const {id} = req.params;
+            console.log(id)
+            const query = { _id: new ObjectId(id) }
+            const result = await allBorrowedBooksDb.deleteOne(query);
+            res.send({ message: 'Borrowed book removed successfully.', result });
+        });
+
 
 
 
