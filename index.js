@@ -57,6 +57,8 @@ async function run() {
 
         const allBooksDb = client.db("LibraryManagementSystem").collection('Books')
         const allBorrowedBooksDb = client.db("LibraryManagementSystem").collection('BorrowedBooks')
+        const allUsersDb = client.db("LibraryManagementSystem").collection('users')
+
 
         // json web token
         app.post('/jwt', (req, res) => {
@@ -75,12 +77,42 @@ async function run() {
         app.post('/logout', (req, res) => {
             res.clearCookie('token', {
                 httpOnly: true,
-                secure: process.env.NODE_ENV=== 'production',
+                secure: process.env.NODE_ENV === 'production',
                 sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict'
             })
                 .send({ success: true })
         })
 
+
+        // allUsersDb---------------------------
+        app.post('/users', async (req, res) => {
+            const user = req.body
+            // checking whether the user is old or new 
+            const query = { email: user.email }
+            const existingUsers = await allUsersDb.findOne(query)
+            if (existingUsers) {
+                return res.send({ message: 'User already exists.', insertedId: null })
+            }
+
+            const result = await allUsersDb.insertOne(user)
+            res.send(result)
+        })
+        // working...............................
+        app.get('/users/admin/:email', async (req, res) => {
+            const email = req.params.email;
+
+            if (email !== req.decoded.email) {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+
+            const query = { email: email };
+            const user = await allUsersDb.findOne(query);
+            let admin = false;
+            if (user) {
+                admin = user?.role === 'Admin';
+            }
+            res.send({ admin });
+        })
 
         // allBooksDb------------------
         // getting all data from database (api)
