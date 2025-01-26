@@ -98,12 +98,8 @@ async function run() {
             res.send(result)
         })
         // working...............................
-        app.get('/users/admin/:email', async (req, res) => {
+        app.get('/users/admin/:email', verifyToken, async (req, res) => {
             const email = req.params.email;
-
-            if (email !== req.decoded.email) {
-                return res.status(403).send({ message: 'forbidden access' })
-            }
 
             const query = { email: email };
             const user = await allUsersDb.findOne(query);
@@ -150,6 +146,14 @@ async function run() {
         app.put('/allBooks/:id', verifyToken, async (req, res) => {
             const id = req.params.id
             const updateBook = req.body
+
+            // Check if the authenticated user is an admin
+            const email = req.user.email; // User email from decoded token
+            const user = await allUsersDb.findOne({ email: email });
+
+            if (!user || user.role !== 'Admin') {
+                return res.status(403).send({ message: 'Forbidden access.' });
+            }
             // Remove the _id field before updating
             delete updateBook._id;
             const result = await allBooksDb.updateOne(
@@ -163,6 +167,15 @@ async function run() {
             const newBook = req.body
             newBook.quantity = Number(newBook.quantity); // Ensure numeric type
             newBook.createdAt = new Date()
+            
+            // Check if the authenticated user is an admin
+            const email = req.user.email; // User email from decoded token
+            const user = await allUsersDb.findOne({ email: email });
+
+            if (!user || user.role !== 'Admin') {
+                return res.status(403).send({ message: 'Forbidden access.' });
+            }
+
             const result = await allBooksDb.insertOne(newBook)
             res.send(result)
         })
